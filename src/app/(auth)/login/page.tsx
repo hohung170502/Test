@@ -25,7 +25,7 @@ export default async function Page() {
         </CardHeader>
         <CardContent>
           <SigninForm />
-          <Link href={`${BE_URL}/api/v1/auth/google/login`}>
+          <Link href="#">
             <Button
               variant='outline'
               className='w-full mt-2'>
