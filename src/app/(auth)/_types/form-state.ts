@@ -5,6 +5,7 @@ export type FormState =
         email?: string[];
         password?: string[];
       };
+      code?: string;
       success?: boolean;
       message?: string;
       redirectTo?: string
@@ -35,5 +36,14 @@ export const signin_form_schema = z.object({
     .regex(/[a-zA-Z0-9]/, {
       message: "Contain at least one special character.",
     })
+    .trim(),
+});
+
+export const verify_code_form_schema = z.object({
+  email: z.string().email({ message: "Email is required" }).trim(),
+  code: z
+    .string()
+    .length(6, { message: "Code must be 6 characters long" })
+    .regex(/^[0-9]+$/, { message: "Code must be a number" })
     .trim(),
 });

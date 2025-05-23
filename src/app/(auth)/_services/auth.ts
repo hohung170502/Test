@@ -3,6 +3,7 @@ import {
   FormState,
   signin_form_schema,
   signup_form_schema,
+  verify_code_form_schema,
 } from '@/app/(auth)/_types/form-state';
 import { BE_URL } from '../_constants/url';
 import { redirect } from 'next/navigation';
@@ -136,19 +137,35 @@ export async function getUserById(id: string, accessToken: string) {
   return res.json();
 }
 
-export async function verifyCode(email: string, code: string) {
-  const res = await fetch(`${BE_URL}/mutiple-auth/verify-code`, {
+
+export async function verifyCode(
+  state: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const validationFields = verify_code_form_schema.safeParse({
+    email: formData.get('email'),
+    code: formData.get('code'),
+   
+  });
+  if (!validationFields.success) {
+    return {
+      error: validationFields.error.flatten().fieldErrors,
+    };
+  }
+   const res = await fetch(`${BE_URL}/mutiple-auth/verify-code`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email, code }),
+    body: JSON.stringify(validationFields.data),
   });
-  const data = await res.json();
+
   if (res.ok) {
-    // Xác thực thành công, trả về user + token
-    return { success: true, data };
-  } else {
-    return { success: false, message: data.message || "Mã xác thực không đúng!" };
-  }
+  const result = await res.json();
+  
+  redirect('/');
+} else
+  return {
+    message: res.status === 401 ? 'Invalid Credentials' : res.statusText,
+  };
 }

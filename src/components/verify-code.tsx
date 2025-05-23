@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   InputOTP,
@@ -10,42 +10,23 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { verifyCode } from "@/app/(auth)/_services/auth";
 import { toast } from "sonner";
-export default function VerifyCodePage() {
-  const [otp, setOtp] = useState("");
-  const [message, setMessage] = useState("");
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const email = searchParams.get("email");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage("");
-    if (!email) {
-      setMessage("Không tìm thấy email!");
-      toast.error("Không tìm thấy email!");
-      return;
-    }
-    const result = await verifyCode(email, otp);
-    if (result.success) {
-      setMessage("Xác thực thành công! Đang chuyển hướng...");
+export default function VerifyCodePage() {
+  const [state, action] = useActionState(verifyCode, undefined);
+  const router = useRouter(); // Initialize router
+  useEffect(() => {
+    if (state?.success) {
       toast.success("Xác thực thành công!");
-      setTimeout(() => {
-        router.push("/login");
-      }, 1500);
-    } else {
-      const msg =
-        typeof result.message === "string"
-          ? result.message
-          : result.message?.message || "Có lỗi xảy ra!";
-      setMessage(msg);
-      toast.error(msg);
+      router.push("/"); // Chuyển hướng nếu đăng nhập thành công
+    } else if (state?.error) {
+      toast.error(state.message);
     }
-  };
+  }, [state, router]);
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
       <form
-        onSubmit={handleSubmit}
+        action={action}
         className="bg-white rounded-xl shadow-xl p-8 w-full max-w-md flex flex-col gap-6 border border-gray-100"
       >
         <div className="flex flex-col items-center gap-2">
@@ -55,13 +36,13 @@ export default function VerifyCodePage() {
           </p>
         </div>
         <div className="flex flex-col items-center gap-4">
-          <Label htmlFor="otp" className="sr-only">
+          <Label htmlFor="code" className="sr-only">
             Mã xác thực
           </Label>
           <InputOTP
             maxLength={6}
-            value={otp}
-            onChange={setOtp}
+            name="code"
+            id="code"
             autoFocus
             className="flex justify-center gap-2"
           >
@@ -82,13 +63,15 @@ export default function VerifyCodePage() {
         >
           Xác thực
         </Button>
-        {message && (
+        {state?.message && (
           <p
             className={`text-center text-sm ${
-              message.includes("thành công") ? "text-green-600" : "text-red-500"
+              state.message.includes("thành công")
+                ? "text-green-600"
+                : "text-red-500"
             }`}
           >
-            {message}
+            {state.message}
           </p>
         )}
       </form>
