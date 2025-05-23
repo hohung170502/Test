@@ -13,11 +13,18 @@ import { Label } from "@/components/ui/label";
 import SubmitBtn from "@/app/(auth)/_components/_ui/submitBtn";
 import { useFormState } from "react-dom";
 import { signup } from "@/app/(auth)/_services/auth";
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function SignupForm() {
   const [state, action] = useActionState(signup, undefined);
+  const router = useRouter();
 
+  useEffect(() => {
+    if (state?.redirectTo) {
+      router.push(state.redirectTo);
+    }
+  }, [state, router]);
   return (
     <form action={action} className="grid gap-4">
       <div className="grid gap-2">

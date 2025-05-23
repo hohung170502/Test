@@ -22,6 +22,7 @@ export async function signup(
       error: validationFields.error.flatten().fieldErrors,
     };
   }
+  // Đăng ký tài khoản
   const res = await fetch(`${BE_URL}/mutiple-auth/register`, {
     method: 'POST',
     headers: {
@@ -32,11 +33,21 @@ export async function signup(
   const responseData = await res.json();
 
   if (res.status === 201) {
-   return {
-      success: true,
-      message: "Email đã được gửi. Vui lòng xác minh tài khoản.",
-    };
-  } else {
+  // Gửi email xác thực
+  await fetch(`${BE_URL}/mutiple-auth/send-email`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email: validationFields.data.email }),
+  });
+
+  return {
+    success: true,
+    message: "Email đã được gửi. Vui lòng xác minh tài khoản.",
+    redirectTo: "/verify-code?email=" + encodeURIComponent(validationFields.data.email),
+  };
+} else {
     return {
       success: false,
       message: responseData.message || "Email đã tồn tại",
@@ -123,4 +134,21 @@ export async function getUserById(id: string, accessToken: string) {
   });
   if (!res.ok) throw new Error('Không lấy được thông tin user');
   return res.json();
+}
+
+export async function verifyCode(email: string, code: string) {
+  const res = await fetch(`${BE_URL}/mutiple-auth/verify-code`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, code }),
+  });
+  const data = await res.json();
+  if (res.ok) {
+    // Xác thực thành công, trả về user + token
+    return { success: true, data };
+  } else {
+    return { success: false, message: data.message || "Mã xác thực không đúng!" };
+  }
 }

@@ -7,6 +7,8 @@ export type FormState =
       };
       success?: boolean;
       message?: string;
+      redirectTo?: string
+
     }
   | undefined;
 
