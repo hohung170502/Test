@@ -1,32 +1,17 @@
-import { NextResponse } from "next/server";
- 
-let locales = ['en-US', 'nl-NL', 'nl']
- 
-// Get the preferred locale, similar to the above or using a library
-// function getLocale(request) { ... }
- 
-export function middleware(request) {
-  // Check if there is any supported locale in the pathname
-  const { pathname } = request.nextUrl
-  const pathnameHasLocale = locales.some(
-    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
-  )
- 
-  if (pathnameHasLocale) return
- 
-  // Redirect if there is no locale
-  const locale = getLocale(request)
-  request.nextUrl.pathname = `/${locale}${pathname}`
-  // e.g. incoming request is /products
-  // The new URL is now /en-US/products
-  return NextResponse.redirect(request.nextUrl)
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { getSession } from './app/(auth)/lib/session';
+
+// This function can be marked `async` if using `await` inside
+export default async function middleware(req: NextRequest) {
+  const session = await getSession();
+  if (!session || !session.user) {
+    return NextResponse.redirect(new URL('/login', req.nextUrl));
+  }
+  NextResponse.next();
 }
- 
+
+// See "Matching Paths" below to learn more
 export const config = {
-  matcher: [
-    // Skip all internal paths (_next)
-    '/((?!_next).*)',
-    // Optional: only run on root (/) URL
-    // '/'
-  ],
-}
+  matcher: ['/profile'],
+};
