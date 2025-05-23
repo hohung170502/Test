@@ -24,7 +24,6 @@ export default async function ProfileLayout({
   children,
 }: {
   children: React.ReactNode;
-  params: { id: string };
 }) {
   const session = await getSession();
   if (!session || !session.user) {
