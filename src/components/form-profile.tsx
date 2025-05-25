@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
@@ -36,7 +36,10 @@ import { Textarea } from "./ui/textarea";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import Link from "next/link";
+import Image from "next/image";
+
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { profile } from "@/app/admin/profile/_services/profile";
 
 const FormSchema = z.object({
   username: z.string().min(2, {
@@ -70,6 +73,14 @@ const FormSchema = z.object({
   gender: z.enum(["male", "female", "other"], {
     required_error: "Vui lòng chọn giới tính.",
   }),
+  phonenumber: z
+    .string()
+    .min(10, {
+      message: "Số điện thoại phải có ít nhất 10 ký tự.",
+    })
+    .max(15, {
+      message: "Số điện thoại không được dài hơn 15 ký tự.",
+    }),
 
   avatar: z.string().optional(),
 });
@@ -83,9 +94,37 @@ export function FormDemo() {
       email: "",
       dob: undefined,
       gender: undefined,
+      avatar: "",
+      phonenumber: "",
+
       items: ["recents", "home"],
     },
   });
+  useEffect(() => {
+    async function fetchProfile() {
+      const res = await profile({}, new FormData());
+      if (res?.success && res.data) {
+        console.log("API gender:", res.data.gender);
+
+        form.reset({
+          username: res.data.username || "",
+          email: res.data.email || "",
+          dob: res.data.birthday ? new Date(res.data.birthday) : undefined,
+          gender: (() => {
+            const g = res.data.gender?.toLowerCase().trim();
+            if (g === "nam" || g === "name") return "male";
+            if (g === "nữ" || g === "nu") return "female";
+            if (g === "khác" || g === "khac") return "other";
+            return undefined;
+          })(),
+          avatar: res.data.avatar || "",
+          phonenumber: res.data.phonenumber || "",
+          // Thêm các trường khác nếu cần
+        });
+      }
+    }
+    fetchProfile();
+  }, [form]);
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
     toast("You submitted the following values:", {
@@ -114,7 +153,12 @@ export function FormDemo() {
               />
               <AvatarFallback className="rounded-lg">
                 {/* Có thể để trống hoặc hiện icon/avatar mặc định */}
-                <img src="/default-avatar.png" alt="default" />
+                <Image
+                  width={40}
+                  height={40}
+                  src="/default-avatar.png"
+                  alt="default"
+                />
               </AvatarFallback>
             </Avatar>
             <div>
@@ -128,7 +172,7 @@ export function FormDemo() {
                   <span>Cập nhật ảnh mới</span>
                 </Button>
               </label>
-              <input
+              <Input
                 id="avatar-upload"
                 name="avatar"
                 type="file"
@@ -155,51 +199,69 @@ export function FormDemo() {
           </div>
         </div>
         {/* Họ tên & số diện thoại */}
-        <div className="grid grid-cols-2 gap-4 mt-4">
+        <div className="grid grid-cols-2 gap-4 ">
           <div>
-            <div className="flex items-center mb-2">
-              <Label htmlFor="username">
-                Họ và tên <span className="text-red-500">*</span>
-              </Label>
-            </div>
-            <Input
-              id="username"
+            <FormField
+              control={form.control}
               name="username"
-              type="text"
-              placeholder=""
-              className="hover:border-blue-500 focus:border-blue-500 focus:ring-blue-500"
+              render={({ field }) => (
+                <FormItem>
+                  <Label htmlFor="username">
+                    Họ và tên <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="username"
+                    {...field}
+                    placeholder=""
+                    className="hover:border-blue-500 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
             />
           </div>
-          <div>
-            <div className="flex items-center mb-2">
-              <Label htmlFor="phoneNumber">
-                Số điện thoại <span className="text-red-500">*</span>
-              </Label>
-            </div>
-            <Input
-              id="phoneNumber"
-              name="phoneNumber"
-              type="tel"
-              placeholder="01234567890"
-              className="hover:border-blue-500 focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
+          {/* Số điện thoại nếu muốn lấy từ API thì thêm vào reset và FormSchema */}
+          {/* Ví dụ: */}
+          <FormField
+            control={form.control}
+            name="phonenumber"
+            render={({ field }) => (
+              <FormItem>
+                <Label htmlFor="phonenumber">
+                  Số điện thoại <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="phonenumber"
+                  {...field}
+                  placeholder=""
+                  className="hover:border-blue-500 focus:border-blue-500 focus:ring-blue-500"
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
         {/* Email & ngày sinh */}
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div>
-            <div className="flex items-center mb-2">
-              <Label htmlFor="email">Email</Label>
-            </div>
-            <Input
-              id="email"
+            <FormField
+              control={form.control}
               name="email"
-              type="email"
-              placeholder="m@example.com"
-              className="hover:border-blue-500 focus:border-blue-500 focus:ring-blue-500"
+              render={({ field }) => (
+                <FormItem>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    {...field}
+                    placeholder="m@example.com"
+                    className="hover:border-blue-500 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
             />
           </div>
-          <div>
+          <div className="mt-2">
             <FormField
               control={form.control}
               name="dob"
@@ -219,7 +281,7 @@ export function FormDemo() {
                           {field.value ? (
                             format(field.value, "PPP")
                           ) : (
-                            <span></span>
+                            <span>dsds</span>
                           )}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
@@ -251,10 +313,7 @@ export function FormDemo() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Giới tính</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn giới tính" />

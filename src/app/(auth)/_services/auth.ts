@@ -1,22 +1,22 @@
-'use server';
+"use server";
 import {
   FormState,
+  resend_code_form_schema,
   signin_form_schema,
   signup_form_schema,
   verify_code_form_schema,
-} from '@/app/(auth)/_types/form-state';
-import { BE_URL } from '../_constants/url';
-import { redirect } from 'next/navigation';
-import { createSession, updateToken } from '../lib/session';
-import { authFetch } from '../lib/authFetch';
+} from "@/app/(auth)/_types/form-state";
+import { BE_URL } from "../_constants/url";
+import { redirect } from "next/navigation";
+import { createSession, updateToken } from "../lib/session";
 
 export async function signup(
   state: FormState,
   formData: FormData
 ): Promise<FormState> {
   const validationFields = signup_form_schema.safeParse({
-    email: formData.get('email'),
-    password: formData.get('password'),
+    email: formData.get("email"),
+    password: formData.get("password"),
   });
   if (!validationFields.success) {
     return {
@@ -25,30 +25,31 @@ export async function signup(
   }
   // Đăng ký tài khoản
   const res = await fetch(`${BE_URL}/mutiple-auth/register`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(validationFields.data),
   });
   const responseData = await res.json();
 
   if (res.status === 201) {
-  // Gửi email xác thực
-  await fetch(`${BE_URL}/mutiple-auth/send-email`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ email: validationFields.data.email }),
-  });
+    // Gửi email xác thực
+    await fetch(`${BE_URL}/mutiple-auth/send-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: validationFields.data.email }),
+    });
 
-  return {
-    success: true,
-    message: "Email đã được gửi. Vui lòng xác minh tài khoản.",
-    redirectTo: "/verify-code?email=" + encodeURIComponent(validationFields.data.email),
-  };
-} else {
+    return {
+      success: true,
+      message: "Email đã được gửi. Vui lòng xác minh tài khoản.",
+      redirectTo:
+        "/verify-code?email=" + encodeURIComponent(validationFields.data.email),
+    };
+  } else {
     return {
       success: false,
       message: responseData.message || "Email đã tồn tại",
@@ -61,8 +62,8 @@ export async function signin(
   formData: FormData
 ): Promise<FormState> {
   const validationFields = signin_form_schema.safeParse({
-    email: formData.get('email'),
-    password: formData.get('password'),
+    email: formData.get("email"),
+    password: formData.get("password"),
   });
   if (!validationFields.success) {
     return {
@@ -70,54 +71,60 @@ export async function signin(
     };
   }
   const res = await fetch(`${BE_URL}/mutiple-auth/login`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(validationFields.data),
   });
 
   if (res.ok) {
-  const result = await res.json();
-  await createSession({
-    user: {
-      email: result.email,
-      username: result.username,
-      avatar: result.avatar,
-      roles: result.roles,
-      verified: result.verified,
-    },
-    accessToken: result.accessToken,
-    refreshToken: '',
-  });
-  redirect('/');
-} else
-  return {
-    message: res.status === 401 ? 'Invalid Credentials' : res.statusText,
-  };
+    const result = await res.json();
+    await createSession({
+      user: {
+        email: result.email,
+        username: result.username,
+        avatar: result.avatar,
+        roles: result.roles,
+        verified: result.verified,
+      },
+      accessToken: result.accessToken,
+      refreshToken: "",
+    });
+    return { success: true, message: "Đăng nhập thành công." };
+  } else
+   
+    return {
+      success: false,
+      error: {
+        email: res.status === 401 ? ["Invalid Credentials"] : [],
+        password: res.status === 401 ? ["Invalid Credentials"] : [],
+      },
+      message: res.status === 401 ? "Sai tài khoản hoặc mật khẩu" : res.statusText,
+    };
 }
 
 export async function refreshToken(oldRefreshToken: string) {
   try {
     const res = await fetch(`${BE_URL}/api/auth/refresh`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ refresh: oldRefreshToken }),
     });
     // console.log(res);
     if (!res.ok)
-      throw new Error('Failed to refresh token at auth.ts' + res.statusText);
+      throw new Error("Failed to refresh token at auth.ts" + res.statusText);
     const { accessToken, refreshToken } = await res.json();
 
     // update token
     // await updateToken({ accessToken, refreshToken });
     const updateToken = await fetch(`http://localhost:3000/api/auth/update`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ accessToken, refreshToken }),
     });
-    if (!updateToken.ok) throw new Error('failed to update the token');
+    if (!updateToken.ok) throw new Error("failed to update the token");
     return accessToken;
   } catch (error) {
     console.error(error);
@@ -127,45 +134,71 @@ export async function refreshToken(oldRefreshToken: string) {
 
 export async function getUserById(id: string, accessToken: string) {
   const res = await fetch(`${BE_URL}/api/GetUser/${id}`, {
-    method: 'GET',
+    method: "GET",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
     },
   });
-  if (!res.ok) throw new Error('Không lấy được thông tin user');
+  if (!res.ok) throw new Error("Không lấy được thông tin user");
   return res.json();
 }
-
 
 export async function verifyCode(
   state: FormState,
   formData: FormData
 ): Promise<FormState> {
   const validationFields = verify_code_form_schema.safeParse({
-    email: formData.get('email'),
-    code: formData.get('code'),
-   
+    email: formData.get("email"),
+    code: formData.get("code"),
   });
   if (!validationFields.success) {
     return {
       error: validationFields.error.flatten().fieldErrors,
     };
   }
-   const res = await fetch(`${BE_URL}/mutiple-auth/verify-code`, {
-    method: 'POST',
+  const res = await fetch(`${BE_URL}/mutiple-auth/verify-code`, {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(validationFields.data),
   });
 
   if (res.ok) {
-  const result = await res.json();
-  
-  redirect('/');
-} else
-  return {
-    message: res.status === 401 ? 'Invalid Credentials' : res.statusText,
-  };
+    const result = await res.json();
+
+    redirect("/");
+  } else
+    return {
+      message: res.status === 401 ? "Invalid Credentials" : res.statusText,
+    };
+}
+
+export async function resendVerifyCode(
+  state: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const validationFields = resend_code_form_schema.safeParse({
+    email: formData.get("email"),
+  });
+  if (!validationFields.success) {
+    return {
+      error: validationFields.error.flatten().fieldErrors,
+    };
+  }
+  const res = await fetch(`${BE_URL}/mutiple-auth/resend-code`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(validationFields.data),
+  });
+
+  if (res.ok) {
+   return { success: true, message: "Đã gửi lại mã xác thực về email." };
+
+    redirect("/");
+  } else
+    return { success: false, message: "Có lỗi xảy ra khi gửi lại mã xác thực." };
 }

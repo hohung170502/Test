@@ -59,7 +59,7 @@ export function NavUser({
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{user.username}</span>
-                {/* <span className="truncate text-xs">{user.email}</span> */}
+                <span className="truncate text-xs">{user.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -77,8 +77,8 @@ export function NavUser({
                   <AvatarFallback className="rounded-lg">{user.avatar}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.email}</span>
-                  {/* <span className="truncate text-xs">{user.email}</span> */}
+                  <span className="truncate font-semibold">{user.username} sdsasdsa</span>
+                  <span className="truncate text-xs">{user.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

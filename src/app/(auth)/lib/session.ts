@@ -8,7 +8,7 @@ export type Session = {
     email: string;
     username: string;
     avatar: string;
-    roles: string[];
+    roles?: string[];
     verified: boolean;
   };
   accessToken: string;
@@ -67,7 +67,7 @@ export async function updateToken({}: {
       ...payload.user,
     },
     accessToken: payload.accessToken,
-    refreshToken: payload.refreshToken,
+    refreshToken: "",
   };
   await createSession(newPayload);
 }

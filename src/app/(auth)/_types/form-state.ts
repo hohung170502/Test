@@ -47,3 +47,8 @@ export const verify_code_form_schema = z.object({
     .regex(/^[0-9]+$/, { message: "Code must be a number" })
     .trim(),
 });
+export const resend_code_form_schema = z.object({
+  email: z.string().email({ message: "Email is required" }).trim(),
+  
+});
+
