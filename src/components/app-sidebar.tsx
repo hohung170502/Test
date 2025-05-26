@@ -186,7 +186,7 @@ export function AppSidebar({ session, ...props }: AppSidebarProps) {
         )}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={{ ...user, roles: user.roles ?? [] }} />
+        <NavUser  />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
