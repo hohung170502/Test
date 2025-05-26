@@ -26,21 +26,12 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
-export function NavUser({
-  user,
-}: {
-  user: {
-    email: string;
-    username: string;
-    avatar: string;
-    roles: string[];
-    verified: boolean;
+import { useUser } from "@/hooks/user-context";
 
-    // email: string
-    // avatar: string
-  };
-}) {
+export function NavUser() {
+  const { user } = useUser();
   const { isMobile } = useSidebar();
+  if (!user) return null;
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -51,11 +42,10 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage
-                  src={"https://images.unsplash.com/broken"}
-                  alt={user.email}
-                />
-                <AvatarFallback className="rounded-lg">{user.avatar}</AvatarFallback>
+                <AvatarImage src={user.avatar} alt={user.avatar} />
+                <AvatarFallback className="rounded-lg">
+                  {user.avatar}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{user.username}</span>
@@ -74,10 +64,14 @@ export function NavUser({
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.avatar} />
-                  <AvatarFallback className="rounded-lg">{user.avatar}</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {user.avatar}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.username} sdsasdsa</span>
+                  <span className="truncate font-semibold">
+                    {user.username}
+                  </span>
                   <span className="truncate text-xs">{user.email}</span>
                 </div>
               </div>

@@ -10,7 +10,6 @@ import { z } from "zod";
 
 import { cn } from "@/lib/utils";
 
-import { Checkbox } from "@radix-ui/react-checkbox";
 import { Button } from "./ui/button";
 import { Calendar } from "./ui/calendar";
 import {
@@ -24,7 +23,6 @@ import {
 } from "./ui/form";
 import { Input } from "./ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -32,14 +30,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Textarea } from "./ui/textarea";
-import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
-import Link from "next/link";
-import Image from "next/image";
-
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { profile } from "@/app/admin/profile/_services/profile";
+import { profile, updateAvatar } from "@/app/admin/profile/_services/profile";
+import { useUser } from "@/hooks/user-context";
 
 const FormSchema = z.object({
   username: z.string().min(2, {
@@ -86,6 +80,7 @@ const FormSchema = z.object({
 });
 
 export function FormDemo() {
+  const { user, setUser } = useUser();
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -96,16 +91,14 @@ export function FormDemo() {
       gender: undefined,
       avatar: "",
       phonenumber: "",
-
       items: ["recents", "home"],
     },
   });
+
   useEffect(() => {
     async function fetchProfile() {
       const res = await profile({}, new FormData());
       if (res?.success && res.data) {
-        console.log("API gender:", res.data.gender);
-
         form.reset({
           username: res.data.username || "",
           email: res.data.email || "",
@@ -119,12 +112,19 @@ export function FormDemo() {
           })(),
           avatar: res.data.avatar || "",
           phonenumber: res.data.phonenumber || "",
-          // Thêm các trường khác nếu cần
+        });
+        setUser({
+          email: res.data.email || "",
+          username: res.data.username || "",
+          avatar: res.data.avatar || "",
+          roles: res.data.roles,
+          verified: res.data.verified,
         });
       }
     }
     fetchProfile();
-  }, [form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setUser]);
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
     toast("You submitted the following values:", {
@@ -150,15 +150,13 @@ export function FormDemo() {
                 src={form.watch("avatar") || "/default-avatar.png"}
                 alt="avatar"
                 className="object-cover"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src =
+                    "/default-avatar.png";
+                }}
               />
               <AvatarFallback className="rounded-lg">
                 {/* Có thể để trống hoặc hiện icon/avatar mặc định */}
-                <Image
-                  width={40}
-                  height={40}
-                  src="/default-avatar.png"
-                  alt="default"
-                />
               </AvatarFallback>
             </Avatar>
             <div>
@@ -181,12 +179,28 @@ export function FormDemo() {
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    // Xử lý upload hoặc preview ảnh tại đây
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                      form.setValue("avatar", ev.target?.result as string);
-                    };
-                    reader.readAsDataURL(file);
+                    const formData = new FormData();
+                    formData.append("file", file);
+
+                    const res = await updateAvatar({}, formData);
+                    if (res?.success) {
+                      toast.success("Cập nhật ảnh đại diện thành công!");
+                      // Nếu BE trả về URL mới, nên dùng URL đó
+                      const newAvatarUrl =
+                        res.data?.avatar || URL.createObjectURL(file);
+                      form.setValue("avatar", newAvatarUrl);
+                      setUser({
+                        email: user?.email || "",
+                        username: user?.username || "",
+                        avatar: newAvatarUrl,
+                        roles: user?.roles,
+                        verified: user?.verified,
+                      });
+                    } else {
+                      toast.error(
+                        res?.message || "Cập nhật ảnh đại diện thất bại!"
+                      );
+                    }
                   }
                 }}
               />
@@ -198,7 +212,7 @@ export function FormDemo() {
             </div>
           </div>
         </div>
-        {/* Họ tên & số diện thoại */}
+        {/* Họ tên & số điện thoại */}
         <div className="grid grid-cols-2 gap-4 ">
           <div>
             <FormField
@@ -220,8 +234,6 @@ export function FormDemo() {
               )}
             />
           </div>
-          {/* Số điện thoại nếu muốn lấy từ API thì thêm vào reset và FormSchema */}
-          {/* Ví dụ: */}
           <FormField
             control={form.control}
             name="phonenumber"
