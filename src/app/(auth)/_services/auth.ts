@@ -258,7 +258,6 @@ export async function resetPassword(
   formData: FormData
 ): Promise<FormState> {
   const validationFields = reset_password_form_schema.safeParse({
-    token: formData.get("token"),
     newPassword: formData.get("newPassword"),
   });
 

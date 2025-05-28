@@ -30,11 +30,12 @@ export function ResetPasswordForm({
       toast.success("Mật khẩu đã được đặt lại thành công");
       router.push("/login"); // Chuyển hướng về trang đăng nhập
     } else if (state?.error) {
-      if (state.message?.toLowerCase().includes("token")) {
+      const errorMessage = state.message || "Đã xảy ra lỗi không xác định.";
+      if (errorMessage.toLowerCase().includes("token")) {
         toast.error("Token không hợp lệ hoặc đã hết hạn.");
         router.push("/forgot-password"); // Chuyển hướng về trang quên mật khẩu
       } else {
-        toast.error(state.message);
+        toast.error(errorMessage);
       }
     }
   }, [state, router]);
