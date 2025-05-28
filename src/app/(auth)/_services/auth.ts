@@ -238,9 +238,10 @@ export async function forgotPassword(
         redirectTo: result.resetLink, // Sử dụng liên kết đặt lại mật khẩu từ backend
       };
     } else {
+      const errorResponse = await res.json();
       return {
         success: false,
-        message: res.statusText,
+        message: errorResponse.message || res.statusText,
       };
     }
   } catch (error) {
@@ -252,18 +253,19 @@ export async function forgotPassword(
   }
 }
 
-
 export async function resetPassword(
   state: FormState,
   formData: FormData
 ): Promise<FormState> {
   const validationFields = reset_password_form_schema.safeParse({
+    token: formData.get("token"),
     newPassword: formData.get("newPassword"),
   });
 
   if (!validationFields.success) {
     return {
       error: {
+
         email: validationFields.error.flatten().fieldErrors.token,
         password: validationFields.error.flatten().fieldErrors.newPassword,
       },
@@ -283,19 +285,20 @@ export async function resetPassword(
       const result = await res.json();
       return {
         success: true,
-        message: result.message,
+        message: result.message || "Mật khẩu đã được thay đổi thành công.",
       };
     } else {
+      const errorResponse = await res.json();
       return {
         success: false,
-        message: res.statusText,
+        message: errorResponse.message || res.statusText,
       };
     }
   } catch (error) {
     console.error("Error in resetPassword:", error);
     return {
       success: false,
-      message: "An error occurred while processing your request.",
+      message: "Đã xảy ra lỗi khi xử lý yêu cầu của bạn.",
     };
   }
 }

@@ -4,49 +4,39 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, startTransition } from "react";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { resetPassword } from "@/app/(auth)/_services/auth";
+import { SubmitBtnLogin } from "./submitBtn";
 
 export function ResetPasswordForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
+  const [state, action] = useActionState(resetPassword, undefined);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get("token"); // Lấy token từ URL
-  const [state, action] = useActionState(resetPassword, undefined);
-
-  useEffect(() => {
-    if (!token) {
-      toast.error("Token không hợp lệ hoặc đã hết hạn.");
-      router.push("/forgot-password"); // Chuyển hướng về trang quên mật khẩu
-    }
-  }, [token, router]);
+  const token = searchParams.get("token");
 
   useEffect(() => {
     if (state?.success) {
-      toast.success("Mật khẩu đã được đặt lại thành công");
-      router.push("/login"); // Chuyển hướng về trang đăng nhập
+      console.log("Password reset successful:", state);
+      toast.success("Mật khẩu đã được đặt lại thành công.");
+
+      router.push("/login");
     } else if (state?.error) {
-      const errorMessage = state.message || "Đã xảy ra lỗi không xác định.";
-      if (errorMessage.toLowerCase().includes("token")) {
-        toast.error("Token không hợp lệ hoặc đã hết hạn.");
-        router.push("/forgot-password"); // Chuyển hướng về trang quên mật khẩu
-      } else {
-        toast.error(errorMessage);
-      }
+      console.error("Password reset failed:", state);
+      toast.error(state.message || "Đặt lại mật khẩu thất bại.");
     }
   }, [state, router]);
 
   useEffect(() => {
-    if (state?.error) {
-      console.error("API Error:", state.message); // Ghi lại phản hồi từ API để kiểm tra
+    if (!token) {
+      console.error("Token is missing from the URL.");
+      toast.error("Token không hợp lệ hoặc đã hết hạn.");
     }
-  }, [state]);
-
-  
+  }, [token]);
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -55,7 +45,14 @@ export function ResetPasswordForm({
           <CardTitle className="text-xl">Đặt lại mật khẩu</CardTitle>
         </CardHeader>
         <CardContent>
-          <form action={action} >
+          <form
+            action={(formData) => {
+              if (token) {
+                formData.append("token", token);
+              }
+              return action(formData);
+            }}
+          >
             <div className="grid gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="newPassword">Mật khẩu mới</Label>
@@ -71,9 +68,7 @@ export function ResetPasswordForm({
                   </p>
                 )}
               </div>
-              <Button type="submit" className="w-full">
-                Đặt lại mật khẩu
-              </Button>
+              <SubmitBtnLogin>Đặt lại mật khẩu</SubmitBtnLogin>
             </div>
           </form>
         </CardContent>
