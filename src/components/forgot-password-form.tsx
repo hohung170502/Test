@@ -27,9 +27,11 @@ export function ForgotPasswordForm({
 
   useEffect(() => {
     if (state?.success) {
-      toast.success("Yêu cầu đặt lại mật khẩu đã được gửi thành công");
+      toast.success(
+        "Yêu cầu đặt lại mật khẩu đã được gửi thành công. Vui lòng kiểm tra email của bạn."
+      );
       setIsLoading(false);
-      router.push(state.redirectTo || "/reset-password"); // Chuyển hướng tới liên kết đặt lại mật khẩu từ API hoặc mặc định
+      // Loại bỏ router.push để không tự động chuyển hướng
     } else if (state?.error) {
       toast.error(state.message);
       setIsLoading(false);
