@@ -73,21 +73,21 @@ const data = {
       ],
     },
     {
-      title: "Models",
+      title: "Danh sách tài khoản",
       url: "#",
       icon: Bot,
       items: [
         {
-          title: "Genesis",
-          url: "#",
+          title: "Quản lý tài khoản",
+          url: "/admin/account",
         },
         {
-          title: "Explorer",
-          url: "#",
+          title: "Quản lý vai trò",
+          url: "/admin/roles",
         },
         {
-          title: "Quantum",
-          url: "#",
+          title: "Quản lý quyền",
+          url: "/admin/permission",
         },
       ],
     },
@@ -181,12 +181,11 @@ export function AppSidebar({ session, ...props }: AppSidebarProps) {
         {isUser && (
           <div className="text-blue-500 font-bold">
             <NavMain items={data.navMain} />
-
           </div>
         )}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser  />
+        <NavUser user={user} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

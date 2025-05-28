@@ -33,7 +33,6 @@ import {
 import { Label } from "./ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { profile, updateAvatar } from "@/app/admin/profile/_services/profile";
-import { useUser } from "@/hooks/user-context";
 
 const FormSchema = z.object({
   username: z.string().min(2, {
@@ -80,7 +79,6 @@ const FormSchema = z.object({
 });
 
 export function FormDemo() {
-  const { user, setUser } = useUser();
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -113,18 +111,11 @@ export function FormDemo() {
           avatar: res.data.avatar || "",
           phonenumber: res.data.phonenumber || "",
         });
-        setUser({
-          email: res.data.email || "",
-          username: res.data.username || "",
-          avatar: res.data.avatar || "",
-          roles: res.data.roles,
-          verified: res.data.verified,
-        });
       }
     }
     fetchProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setUser]);
+  }, []);
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
     toast("You submitted the following values:", {
@@ -189,13 +180,6 @@ export function FormDemo() {
                       const newAvatarUrl =
                         res.data?.avatar || URL.createObjectURL(file);
                       form.setValue("avatar", newAvatarUrl);
-                      setUser({
-                        email: user?.email || "",
-                        username: user?.username || "",
-                        avatar: newAvatarUrl,
-                        roles: user?.roles,
-                        verified: user?.verified,
-                      });
                     } else {
                       toast.error(
                         res?.message || "Cập nhật ảnh đại diện thất bại!"

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   BadgeCheck,
@@ -26,12 +26,22 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
-import { useUser } from "@/hooks/user-context";
 
-export function NavUser() {
-  const { user } = useUser();
+
+export function NavUser({
+  user,
+}: {
+  user: {
+    username: string;
+    email: string;
+    avatar: string;
+
+    roles?: string[];
+    verified?: boolean;
+  };
+}) {
   const { isMobile } = useSidebar();
-  if (!user) return null;
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -85,12 +95,17 @@ export function NavUser() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <Link href={"/admin/profile"}>
-                <DropdownMenuItem>
-                  <BadgeCheck />
-                  Account
-                </DropdownMenuItem>
-              </Link>
+              <DropdownMenuItem
+                onClick={() => {
+                  // Handle profile navigation
+
+                  window.location.href = "/admin/profile";
+                }}
+              >
+                <BadgeCheck />
+                Account
+              </DropdownMenuItem>
+
               <DropdownMenuItem>
                 <CreditCard />
                 Billing

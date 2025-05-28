@@ -1,4 +1,5 @@
-'use client';
+"use client";
+import { Session } from "@/app/(auth)/lib/session";
 import React, { createContext, useContext, useState } from "react";
 
 type User = {
@@ -19,8 +20,15 @@ const UserContext = createContext<{
 
 export const useUser = () => useContext(UserContext);
 
-export function UserProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+export function UserProvider({
+  children,
+  session,
+}: {
+  children: React.ReactNode;
+  session?: Session | null; // 👈 Cho phép null
+}) {
+  const [user, setUser] = useState<User | null>(session?.user ?? null);
+
   return (
     <UserContext.Provider value={{ user, setUser }}>
       {children}

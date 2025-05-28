@@ -83,7 +83,7 @@ export function SigninForm({
                     </ul>
                   )}
                   <p className="font-medium text-gray-900 text-sm text-right ">
-                    <Link href="#" className="hover:underline">
+                    <Link href="/forgot-password" className="hover:underline">
                       Quên mật khẩu?
                     </Link>
                   </p>

@@ -5,6 +5,8 @@ import {
   signin_form_schema,
   signup_form_schema,
   verify_code_form_schema,
+  forgot_password_form_schema,
+  reset_password_form_schema,
 } from "@/app/(auth)/_types/form-state";
 import { BE_URL } from "../_constants/url";
 import { redirect } from "next/navigation";
@@ -201,4 +203,100 @@ export async function resendVerifyCode(
     redirect("/");
   } else
     return { success: false, message: "Có lỗi xảy ra khi gửi lại mã xác thực." };
+}
+
+export async function forgotPassword(
+  state: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const validationFields = forgot_password_form_schema.safeParse({
+    email: formData.get("email"),
+  });
+
+  if (!validationFields.success) {
+    return {
+      error: {
+        email: validationFields.error.flatten().fieldErrors.email,
+      },
+    };
+  }
+
+  try {
+    const res = await fetch(`${BE_URL}/profile/forgot-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(validationFields.data),
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      return {
+        success: true,
+        message: result.message,
+        redirectTo: result.resetLink, // Sử dụng liên kết đặt lại mật khẩu từ backend
+      };
+    } else {
+      return {
+        success: false,
+        message: res.statusText,
+      };
+    }
+  } catch (error) {
+    console.error("Error in forgotPassword:", error);
+    return {
+      success: false,
+      message: "An error occurred while processing your request.",
+    };
+  }
+}
+
+
+export async function resetPassword(
+  state: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const validationFields = reset_password_form_schema.safeParse({
+    token: formData.get("token"),
+    newPassword: formData.get("newPassword"),
+  });
+
+  if (!validationFields.success) {
+    return {
+      error: {
+        email: validationFields.error.flatten().fieldErrors.token,
+        password: validationFields.error.flatten().fieldErrors.newPassword,
+      },
+    };
+  }
+
+  try {
+    const res = await fetch(`${BE_URL}/profile/reset-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(validationFields.data),
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      return {
+        success: true,
+        message: result.message,
+      };
+    } else {
+      return {
+        success: false,
+        message: res.statusText,
+      };
+    }
+  } catch (error) {
+    console.error("Error in resetPassword:", error);
+    return {
+      success: false,
+      message: "An error occurred while processing your request.",
+    };
+  }
 }
