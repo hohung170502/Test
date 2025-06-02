@@ -10,7 +10,7 @@ import {
 } from "@/app/(auth)/_types/form-state";
 import { BE_URL } from "../_constants/url";
 import { redirect } from "next/navigation";
-import { createSession, updateToken } from "../lib/session";
+import { createSession, getSession, deleteSession } from "../lib/session";
 
 export async function signup(
   state: FormState,
@@ -91,11 +91,9 @@ export async function signin(
         verified: result.verified,
       },
       accessToken: result.accessToken,
-      refreshToken: "",
     });
     return { success: true, message: "Đăng nhập thành công." };
-  } else
-   
+  } else {
     return {
       success: false,
       error: {
@@ -104,33 +102,6 @@ export async function signin(
       },
       message: res.status === 401 ? "Sai tài khoản hoặc mật khẩu" : res.statusText,
     };
-}
-
-export async function refreshToken(oldRefreshToken: string) {
-  try {
-    const res = await fetch(`${BE_URL}/api/auth/refresh`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ refresh: oldRefreshToken }),
-    });
-    // console.log(res);
-    if (!res.ok)
-      throw new Error("Failed to refresh token at auth.ts" + res.statusText);
-    const { accessToken, refreshToken } = await res.json();
-
-    // update token
-    // await updateToken({ accessToken, refreshToken });
-    const updateToken = await fetch(`http://localhost:3000/api/auth/update`, {
-      method: "POST",
-      body: JSON.stringify({ accessToken, refreshToken }),
-    });
-    if (!updateToken.ok) throw new Error("failed to update the token");
-    return accessToken;
-  } catch (error) {
-    console.error(error);
-    return null;
   }
 }
 
@@ -300,5 +271,32 @@ export async function resetPassword(
       success: false,
       message: "Đã xảy ra lỗi khi xử lý yêu cầu của bạn.",
     };
+  }
+}
+
+export async function logout(): Promise<{ success: boolean; message: string }> {
+  const session = await getSession();
+  const accessToken = session?.accessToken;
+
+  if (!accessToken) {
+    await deleteSession();
+    return { success: false, message: "Không tìm thấy accessToken hoặc đã hết hạn." };
+  }
+
+  const res = await fetch(`${BE_URL}/mutiple-auth/logout`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (res.ok) {
+    await deleteSession();
+    return { success: true, message: "Đăng xuất thành công." };
+  } else {
+    const errorResponse = await res.json();
+    console.error("Logout failed:", errorResponse);
+    return { success: false, message: errorResponse.message || "Đăng xuất thất bại." };
   }
 }

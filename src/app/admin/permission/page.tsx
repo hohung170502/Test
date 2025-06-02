@@ -15,6 +15,11 @@ export default function PermissionsPage() {
   const [sortOrder, setSortOrder] = useState(true);
   const [sortField, setSortField] = useState("");
 
+  const [showModal, setShowModal] = useState(false);
+  const [selectedPermissionId, setSelectedPermissionId] = useState<
+    string | null
+  >(null);
+
   useEffect(() => {
     const fetchPermissions = async () => {
       setLoading(true);
@@ -58,8 +63,26 @@ export default function PermissionsPage() {
     }
   };
 
+  const handleDeleteClick = (id: string) => {
+    setSelectedPermissionId(id);
+    setShowModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (selectedPermissionId) {
+      await handleDeletePermission(selectedPermissionId);
+      setShowModal(false);
+      setSelectedPermissionId(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowModal(false);
+    setSelectedPermissionId(null);
+  };
+
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Danh sách quyền</h1>
         <Link href="/admin/permission/create">
@@ -127,7 +150,7 @@ export default function PermissionsPage() {
                   <td className="p-3 text-center">{permission.description}</td>
                   <td className="p-3 text-center">
                     <button
-                      onClick={() => handleDeletePermission(permission._id!)}
+                      onClick={() => handleDeleteClick(permission._id!)}
                       className="text-red-600 hover:underline font-semibold"
                     >
                       <DeletePermission className="inline-block w-5 h-5" />
@@ -172,6 +195,36 @@ export default function PermissionsPage() {
           </div>
         </div>
       </div>
+
+      {showModal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+          style={{ top: 0, left: 0, width: "100vw", height: "100vh" }}
+        >
+          <div className="bg-white p-6 rounded shadow-md text-center z-60">
+            <p className="text-lg font-semibold mb-4">
+              Bạn có chắc thực hiện thao tác xóa không?
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              Bạn sẽ không thể lấy lại được dữ liệu này!
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+              >
+                Không
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Có
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

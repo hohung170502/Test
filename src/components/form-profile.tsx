@@ -1,28 +1,10 @@
 "use client";
 import React, { useEffect, useState } from "react";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
-
-import { cn } from "@/lib/utils";
 
 import { Button } from "./ui/button";
-import { Calendar } from "./ui/calendar";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "./ui/form";
 import { Input } from "./ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import {
   Select,
   SelectContent,
@@ -32,104 +14,184 @@ import {
 } from "./ui/select";
 import { Label } from "./ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { profile, updateAvatar } from "@/app/admin/profile/_services/profile";
-
-const FormSchema = z.object({
-  username: z.string().min(2, {
-    message: "Username must be at least 2 characters.",
-  }),
-  bio: z
-    .string()
-    .min(10, {
-      message: "Bio must be at least 10 characters.",
-    })
-    .max(160, {
-      message: "Bio must not be longer than 30 characters.",
-    }),
-  email: z
-    .string({
-      required_error: "Please select an email to display.",
-    })
-    .email(),
-  type: z.enum(["all", "mentions", "none"], {
-    required_error: "You need to select a notification type.",
-  }),
-  mobile: z.boolean().default(false).optional(),
-  items: z.array(z.string()).refine((value) => value.some((item) => item), {
-    message: "You have to select at least one item.",
-  }),
-  dob: z.date({
-    required_error: "A date of birth is required.",
-  }),
-  marketing_emails: z.boolean().default(false).optional(),
-  security_emails: z.boolean(),
-  gender: z.enum(["male", "female", "other"], {
-    required_error: "Vui lòng chọn giới tính.",
-  }),
-  phonenumber: z
-    .string()
-    .min(10, {
-      message: "Số điện thoại phải có ít nhất 10 ký tự.",
-    })
-    .max(15, {
-      message: "Số điện thoại không được dài hơn 15 ký tự.",
-    }),
-
-  avatar: z.string().optional(),
-});
-
+import {
+  getProfile,
+  updateProfile,
+  changePassword,
+  uploadAvatar,
+} from "@/app/admin/profile/_services/profile";
+import { useUserStore } from "@/stores/userStore";
+interface ProfileData {
+  email: string;
+  avatar: string;
+  username: string;
+  phonenumber: string;
+  address: string;
+  gender: string;
+  birthday: string;
+}
+interface ActionState {
+  success?: boolean;
+  error?: {
+    email?: string[];
+    avatar?: string[];
+    roles?: string[];
+    username?: string[];
+    phonenumber?: string[];
+    address?: string[];
+    gender?: string[];
+    birthday?: string[];
+    oldPassword?: string[];
+    newPassword?: string[];
+    confirmPassword?: string[];
+  };
+}
 export function FormDemo() {
+  const setUser = useUserStore((state) => state.setUser);
+  const [gender, setGender] = useState<string>("");
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [state, setState] = useState<ActionState>({});
   const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const form = useForm<z.infer<typeof FormSchema>>({
-    resolver: zodResolver(FormSchema),
-    defaultValues: {
-      username: "",
-      email: "",
-      dob: undefined,
-      gender: undefined,
-      avatar: "",
-      phonenumber: "",
-      items: ["recents", "home"],
-    },
-  });
-
+  const [passwordState, setPasswordState] = useState<ActionState>({});
+  // State theo dõi thay đổi form
+  const [profileChanged, setProfileChanged] = useState(false);
+  const [passwordChanged, setPasswordChanged] = useState(false);
+  // Lấy profile lúc mount component
   useEffect(() => {
     async function fetchProfile() {
-      const res = await profile({}, new FormData());
-      if (res?.success && res.data) {
-        form.reset({
-          username: res.data.username || "",
-          email: res.data.email || "",
-          dob: res.data.birthday ? new Date(res.data.birthday) : undefined,
-          gender: (() => {
-            const g = res.data.gender?.toLowerCase().trim();
-            if (g === "nam" || g === "name") return "male";
-            if (g === "nữ" || g === "nu") return "female";
-            if (g === "khác" || g === "khac") return "other";
-            return undefined;
-          })(),
-          avatar: res.data.avatar || "",
-          phonenumber: res.data.phonenumber || "",
-        });
+      const result = await getProfile();
+      if (result?.success) {
+        setProfileData(result.data);
+        setUser(result.data); // cập nhật store
+        setGender(result.data.gender || "");
+      } else {
+        toast.error("Không thể tải thông tin người dùng.");
+        console.error("❌ Lỗi tải thông tin người dùng:", result?.message);
       }
     }
     fetchProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [setUser]);
+  // Hiển thị toast khi có success hoặc error (profile)
+  useEffect(() => {
+    if (state.success) {
+      toast.success("Cập nhật thông tin thành công!");
+    } else if (state.error) {
+      toast.error(
+        "Cập nhật thông tin thất bại. Vui lòng kiểm tra lại thông tin."
+      );
+      console.error("❌ Lỗi cập nhật thông tin:", state.error);
+    }
+  }, [state]);
+  // Hiển thị toast khi có success hoặc error (password)
+  useEffect(() => {
+    if (passwordState.success) {
+      toast.success("Đổi mật khẩu thành công!");
+      setShowPasswordForm(false);
+    } else if (passwordState.error) {
+      toast.error("Đổi mật khẩu thất bại. Vui lòng kiểm tra lại.");
+      console.error("❌ Lỗi đổi mật khẩu:", passwordState.error);
+    }
+  }, [passwordState]);
+  // Theo dõi thay đổi form profile để bật state
+  const handleProfileChange = () => {
+    if (!profileChanged) setProfileChanged(true);
+  };
+  // Theo dõi thay đổi form mật khẩu để bật state
+  const handlePasswordChange = (e: React.FormEvent<HTMLFormElement>) => {
+    const form = e.currentTarget;
+    const newPassword = form.newPassword?.value.trim();
+    const confirmPassword = form.confirmPassword?.value.trim();
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
-    toast("You submitted the following values:", {
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
-  }
+    if (newPassword !== "" || confirmPassword !== "") {
+      if (!passwordChanged) setPasswordChanged(true);
+    } else {
+      setPasswordChanged(false);
+    }
+  };
+  // Hàm xử lý nút lưu chung (cập nhật profile + đổi mật khẩu)
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
+    if (!profileChanged && !passwordChanged) {
+      toast("Bạn chưa thay đổi gì cả!");
+      return;
+    }
+
+    // Cập nhật profile nếu có thay đổi
+    const formData = new FormData(e.currentTarget);
+    formData.set("gender", gender);
+
+    const result = await updateProfile(formData);
+
+    if (result?.success) {
+      if (result.data) {
+        setProfileData(result.data);
+        setUser(result.data);
+        setGender(result.data.gender || "");
+      } else {
+        const freshProfile = await getProfile();
+        if (freshProfile?.success) {
+          setProfileData(freshProfile.data);
+          setUser(freshProfile.data);
+          setGender(freshProfile.data.gender || "");
+        }
+      }
+      setState({ success: true, error: undefined });
+      setProfileChanged(false);
+    } else {
+      setState({ success: false, error: result?.error });
+    }
+
+    // Đổi mật khẩu nếu có thay đổi
+    if (passwordChanged) {
+      const passwordForm = document.getElementById(
+        "change-password-form"
+      ) as HTMLFormElement;
+      const passwordFormData = new FormData(passwordForm);
+
+      const resultPassword = await changePassword(undefined, passwordFormData);
+
+      if (!resultPassword?.success) {
+        console.error("❌ Lỗi đổi mật khẩu:", resultPassword); // Log cả object thay vì error rỗng
+        setPasswordState({
+          success: false,
+          error: resultPassword?.error ?? {
+            oldPassword: ["Đã xảy ra lỗi không xác định."],
+          },
+        });
+        toast.error("Đổi mật khẩu thất bại");
+        return;
+      } else {
+        setPasswordState({ success: true, error: undefined });
+        passwordForm.reset();
+        setShowPasswordForm(false);
+        setPasswordChanged(false);
+      }
+    }
+  };
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Dung lượng file không được vượt quá 5MB.");
+      return;
+    }
+    const result = await uploadAvatar(file);
+    if (result?.success) {
+      const freshProfile = await getProfile();
+      if (freshProfile?.success) {
+        setProfileData(freshProfile.data);
+        setUser(freshProfile.data);
+        setGender(freshProfile.data.gender || "");
+      }
+      toast.success("Cập nhật ảnh đại diện thành công!");
+    } else {
+      toast.error(result?.message || "Cập nhật ảnh đại diện thất bại");
+    }
+  };
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+    <div className="relative flex-1 min-w-0 max-w-full">
+      <div className="px-2">
         {/* Ảnh đại diện */}
         <div className="mt-4">
           <Label className="block mb-2 text-base font-medium">
@@ -138,20 +200,14 @@ export function FormDemo() {
           <div className="flex items-start gap-6 mb-6">
             <Avatar className="h-16 w-16 rounded-lg border">
               <AvatarImage
-                src={form.watch("avatar") || "/default-avatar.png"}
+                src={profileData?.avatar || "/images/customer-empty.png"}
                 alt="avatar"
                 className="object-cover"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src =
-                    "/default-avatar.png";
-                }}
               />
-              <AvatarFallback className="rounded-lg">
-                {/* Có thể để trống hoặc hiện icon/avatar mặc định */}
-              </AvatarFallback>
+              <AvatarFallback className="rounded-lg" />
             </Avatar>
             <div>
-              <label htmlFor="avatar-upload">
+              <label htmlFor="avatar">
                 <Button
                   type="button"
                   variant="outline"
@@ -162,31 +218,12 @@ export function FormDemo() {
                 </Button>
               </label>
               <Input
-                id="avatar-upload"
+                id="avatar"
                 name="avatar"
                 type="file"
                 accept="image/png, image/jpeg"
                 className="hidden"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const formData = new FormData();
-                    formData.append("file", file);
-
-                    const res = await updateAvatar({}, formData);
-                    if (res?.success) {
-                      toast.success("Cập nhật ảnh đại diện thành công!");
-                      // Nếu BE trả về URL mới, nên dùng URL đó
-                      const newAvatarUrl =
-                        res.data?.avatar || URL.createObjectURL(file);
-                      form.setValue("avatar", newAvatarUrl);
-                    } else {
-                      toast.error(
-                        res?.message || "Cập nhật ảnh đại diện thất bại!"
-                      );
-                    }
-                  }
-                }}
+                onChange={handleAvatarChange}
               />
               <div className="text-xs text-muted-foreground mt-1">
                 Dung lượng file tối đa 5 MB.
@@ -196,137 +233,133 @@ export function FormDemo() {
             </div>
           </div>
         </div>
-        {/* Họ tên & số điện thoại */}
-        <div className="grid grid-cols-2 gap-4 ">
+        {/* Form thông tin cá nhân */}
+        <form
+          id="profile-form"
+          onSubmit={handleSubmit}
+          onChange={handleProfileChange}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        >
           <div>
-            <FormField
-              control={form.control}
-              name="username"
-              render={({ field }) => (
-                <FormItem>
-                  <Label htmlFor="username">
-                    Họ và tên <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="username"
-                    {...field}
-                    placeholder=""
-                    className="hover:border-blue-500 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                  <FormMessage />
-                </FormItem>
+            <div className="space-y-2">
+              <Label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Họ và tên
+              </Label>
+              <Input
+                id="username"
+                name="username"
+                placeholder="Nhập họ và tên"
+                defaultValue={profileData?.username || ""}
+                className="hover:border-blue-500 focus:border-blue-500"
+                required
+              />
+              {state?.error?.username && (
+                <p className="text-sm text-red-500">{state.error.username}</p>
               )}
-            />
+            </div>
           </div>
-          <FormField
-            control={form.control}
-            name="phonenumber"
-            render={({ field }) => (
-              <FormItem>
-                <Label htmlFor="phonenumber">
-                  Số điện thoại <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="phonenumber"
-                  {...field}
-                  placeholder=""
-                  className="hover:border-blue-500 focus:border-blue-500 focus:ring-blue-500"
-                />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        {/* Email & ngày sinh */}
-        <div className="grid grid-cols-2 gap-4 mt-4">
           <div>
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    {...field}
-                    placeholder="m@example.com"
-                    className="hover:border-blue-500 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-2">
+              <Label
+                htmlFor="phonenumber"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Số điện thoại
+              </Label>
+              <Input
+                id="phonenumber"
+                name="phonenumber"
+                placeholder="Nhập số điện thoại"
+                defaultValue={profileData?.phonenumber || ""}
+                className="hover:border-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
           </div>
-          <div className="mt-2">
-            <FormField
-              control={form.control}
-              name="dob"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Ngày sinh</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            " pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>dsds</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date > new Date() || date < new Date("1900-01-01")
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <div>
+            <div className="space-y-2">
+              <Label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Email
+              </Label>
+              <Input
+                id="email"
+                name="email"
+                placeholder="Nhập email"
+                defaultValue={profileData?.email || ""}
+                disabled
+              />
+            </div>
           </div>
-        </div>
-        {/* Giới tính */}
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <FormField
-            control={form.control}
-            name="gender"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Giới tính</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn giới tính" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="male">Nam</SelectItem>
-                    <SelectItem value="female">Nữ</SelectItem>
-                    <SelectItem value="other">Khác</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <div className="flex items-center justify-between mt-4">
+          <div>
+            <div className="space-y-2">
+              <Label
+                htmlFor="birthday"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Ngày sinh
+              </Label>
+              <Input
+                id="birthday"
+                name="birthday"
+                type="date"
+                defaultValue={profileData?.birthday || ""}
+                className="hover:border-blue-500 focus:border-blue-500"
+                placeholder="Chọn ngày sinh"
+              />
+            </div>
+          </div>
+          <div>
+            <div className="space-y-2">
+              <Label
+                htmlFor="gender"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Giới tính
+              </Label>
+              <Select
+                value={gender}
+                onValueChange={(value) => {
+                  setGender(value);
+                  handleProfileChange();
+                }}
+              >
+                <SelectTrigger id="gender">
+                  <SelectValue placeholder="Chọn giới tính" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">male</SelectItem>
+                  <SelectItem value="female">female</SelectItem>
+                  <SelectItem value="other">other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <div className="space-y-2">
+              <Label
+                htmlFor="address"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Địa chỉ
+              </Label>
+              <Input
+                id="address"
+                name="address"
+                placeholder="Nhập địa chỉ"
+                defaultValue={profileData?.address || ""}
+                className="hover:border-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+        </form>
+        {/* Thay đổi mật khẩu */}
+        <div className="flex items-center justify-between mt-6">
           <button
             type="button"
             className="text-blue-600 text-sm focus:outline-none"
@@ -335,61 +368,85 @@ export function FormDemo() {
             Thay đổi mật khẩu
           </button>
         </div>
-        {/* Animation collapse/expand */}
-        <div
+        {/* Form đổi mật khẩu */}
+        <form
+          id="change-password-form"
+          onSubmit={(e) => e.preventDefault()}
+          onChange={handlePasswordChange}
           className={`overflow-hidden transition-all duration-500 ${
             showPasswordForm ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
           }`}
         >
           <div className="grid gap-2 mt-4">
             <div className="flex items-center mb-2">
-              <Label htmlFor="password">Mật khẩu</Label>
+              <Label htmlFor="oldPassword">Mật khẩu cũ</Label>
             </div>
             <Input
-              id="password"
-              name="password"
+              id="oldPassword"
+              name="oldPassword"
               type="password"
-              placeholder="******"
+              placeholder="Nhập mật khẩu cũ"
               className="hover:border-blue-500 focus:border-blue-500 focus:ring-blue-500"
+              required={passwordChanged}
             />
+            {passwordState.error?.oldPassword && (
+              <p className="text-sm text-red-500">
+                {passwordState.error.oldPassword.join(", ")}
+              </p>
+            )}
           </div>
+
           <div className="grid grid-cols-2 gap-4 mt-4">
             <div>
               <div className="flex items-center mb-2">
-                <Label htmlFor="new-password">Mật khẩu mới</Label>
+                <Label htmlFor="newPassword">Mật khẩu mới</Label>
               </div>
               <Input
-                id="new-password"
-                name="new-password"
+                id="newPassword"
+                name="newPassword"
                 type="password"
-                placeholder="******"
+                placeholder="Nhập mật khẩu mới"
                 className="hover:border-blue-500 focus:border-blue-500 focus:ring-blue-500"
+                required={passwordChanged}
               />
+              {passwordState.error?.newPassword && (
+                <p className="text-sm text-red-500">
+                  {passwordState.error.newPassword.join(", ")}
+                </p>
+              )}
             </div>
+
             <div>
               <div className="flex items-center mb-2">
-                <Label htmlFor="confirm-password">Nhập mật khẩu mới</Label>
+                <Label htmlFor="confirmPassword">Xác nhận mật khẩu mới</Label>
               </div>
               <Input
-                id="confirm-password"
-                name="confirm-password"
+                id="confirmPassword"
+                name="confirmPassword"
                 type="password"
-                placeholder="******"
+                placeholder="Xác nhận mật khẩu mới"
                 className="hover:border-blue-500 focus:border-blue-500 focus:ring-blue-500"
+                required={passwordChanged}
               />
+              {passwordState.error?.confirmPassword && (
+                <p className="text-sm text-red-500">
+                  {passwordState.error.confirmPassword.join(", ")}
+                </p>
+              )}
             </div>
           </div>
-          <div className="flex justify-end mt-4">
-            <button
-              type="button"
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-              onClick={() => setShowPasswordForm(false)}
-            >
-              Thay đổi mật khẩu
-            </button>
-          </div>
-        </div>
-      </form>
-    </Form>
+        </form>
+      </div>
+      {/* Nút lưu thay đổi duy nhất */}
+      <div className="mt-6 flex justify-end">
+        <button
+          type="submit"
+          form="profile-form"
+          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center"
+        >
+          Lưu thay đổi
+        </button>
+      </div>
+    </div>
   );
 }

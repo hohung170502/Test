@@ -26,6 +26,8 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { Session } from "@/app/(auth)/lib/session";
+import { useUserStore } from "@/stores/userStore";
+import { useEffect } from "react";
 
 // This is sample data.
 const data = {
@@ -162,6 +164,12 @@ export interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 export function AppSidebar({ session, ...props }: AppSidebarProps) {
   const { user } = session;
+  const setUser = useUserStore((state) => state.setUser);
+  useEffect(() => {
+    if (user) {
+      setUser(user); // ✅ Quan trọng
+    }
+  }, [user, setUser]);
   const isAdmin = user.roles?.includes("admin");
   const isUser = user.roles?.includes("user");
   return (
@@ -185,7 +193,7 @@ export function AppSidebar({ session, ...props }: AppSidebarProps) {
         )}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user} />
+        <NavUser />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

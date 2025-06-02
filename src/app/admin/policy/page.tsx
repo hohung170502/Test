@@ -6,6 +6,7 @@ import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { toast } from "sonner";
+import { getPolicies } from "./_services/policy";
 
 export default function PoliciesPage() {
   const [policies, setPolicies] = useState<any[]>([]);
@@ -13,56 +14,67 @@ export default function PoliciesPage() {
   const [pageIndex, setPageIndex] = useState(1);
   const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
+  const [sortOrder, setSortOrder] = useState(true);
+  const [sortField, setSortField] = useState("");
 
-//   useEffect(() => {
-//     const fetchPolicies = async () => {
-//       try {
-//         setLoading(true);
-//         const result = await getPolicies({ pageIndex, pageSize, isDeep: true });
+  useEffect(() => {
+    const fetchPolicies = async () => {
+      setLoading(true);
+      try {
+        const response = await getPolicies({
+          limit: pageSize,
+          page: pageIndex,
+          sort: sortOrder,
+          sortField,
+        });
 
-//         if (result.success && Array.isArray(result.data)) {
-//           setPolicies(result.data);
-//           const totalRecords = result.totalRecords || 0;
-//           setTotalPages(Math.ceil(totalRecords / pageSize));
-//           toast.success("Tải danh sách quyền thành công!");
-//         } else {
-//           toast.error(
-//             "Lỗi khi tải quyền: " + (result.message || "Dữ liệu không hợp lệ")
-//           );
-//           setPolicies([]);
-//         }
-//       } catch (error) {
-//         console.error("❌ Lỗi khi gọi getPolicies:", error);
-//         toast.error("❌ Lỗi không mong đợi khi tải dữ liệu.");
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
+        console.log("Full API Response:", response); // Log toàn bộ response
 
-//     fetchPolicies();
-//   }, [pageIndex, pageSize]);
-//   const handleDeletePolicies = async (id: string) => {
-//     try {
-//       const response = await deletePolicy(id);
-//       if (response?.success) {
-//         setPolicies((prev) => prev.filter((p) => p.id !== id));
-//         toast.success("Đã xóa quyền thành công!");
-//       } else {
-//         toast.error(" Xóa thất bại: " + response?.message);
-//       }
-//     } catch (error) {
-//       console.error("❌ Lỗi khi xóa quyền:", error);
-//       toast.error("❌ Có lỗi xảy ra khi xóa.");
-//     }
-//   };
+        if (response && response.policies && Array.isArray(response.policies)) {
+          setPolicies(response.policies);
+        } else {
+          console.warn("API không trả về danh sách policies hợp lệ.", response);
+          setPolicies([]);
+        }
+
+        if (response && response.totalDocuments !== undefined) {
+          setTotalPages(Math.ceil(response.totalDocuments / pageSize));
+        } else {
+          console.warn("API không trả về totalDocuments.", response);
+          setTotalPages(0);
+        }
+      } catch (error) {
+        console.error("❌ Lỗi khi gọi API getPolicies:", error);
+        toast.error("❌ Có lỗi xảy ra khi tải danh sách quyền.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPolicies();
+  }, [pageIndex, pageSize, sortOrder, sortField]);
+  // const handleDeletePolicies = async (id: string) => {
+  //   try {
+  //     const response = await deletePolicy(id);
+  //     if (response?.success) {
+  //       setPolicies((prev) => prev.filter((p) => p.id !== id));
+  //       toast.success("Đã xóa quyền thành công!");
+  //     } else {
+  //       toast.error(" Xóa thất bại: " + response?.message);
+  //     }
+  //   } catch (error) {
+  //     console.error("❌ Lỗi khi xóa quyền:", error);
+  //     toast.error("❌ Có lỗi xảy ra khi xóa.");
+  //   }
+  // };
   return (
-    <div className="p- bg-gray-50 min-h-screen">
+    <div className="p-4 bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="flex justify-between items-center py-4 border-b">
         <h1 className="text-lg font-semibold">Nhóm admin</h1>
 
         <div className="flex items-center gap-4">
-          <Link href="/admin/policies/create">
+          <Link href="/admin/policy/create">
             <button className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-blue-700">
               <span className="p-icon inline-flex justify-center items-center w-6 h-6">
                 <svg
@@ -132,43 +144,58 @@ export default function PoliciesPage() {
                 </tr>
               </thead>
               <tbody>
-                {policies.map((policy) => (
-                  <tr key={policy.id} className="border-b hover:bg-gray-50">
-                    <td className="px-3 py-3">
-                      <input type="checkbox" className="w-4 h-4" />
-                    </td>
-                    <td className="px-3 py-3 text-blue-600 hover:underline cursor-pointer">
-                      <Link href={`/admin/policies/edit/${policy.id}`}>
-                        {policy.name}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-3 text-center">
-                      {policy.permissions && policy.permissions.length > 0 ? (
-                        <div className="flex flex-wrap justify-center gap-1">
-                          {policy.permissions.map((perm: any) => (
-                            <span
-                              key={perm.id}
-                              className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded"
-                            >
-                              {perm.name}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 text-sm">Không có</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-3">{policy.description}</td>
-                    <td className="px-3 py-3 text-center">
-                      <button
-                        // onClick={() => handleDeletePolicies(policy.id)}
-                        className="text-red-600 hover:underline text-center font-semibold"
-                      >
-                        <DeletePermission className="inline-block w-5 h-5" />
-                      </button>
+                {policies.length > 0 ? (
+                  policies.map((policy, index) => (
+                    <tr
+                      key={policy._id || index}
+                      className="border-b hover:bg-gray-50"
+                    >
+                      <td className="px-3 py-3">
+                        <input type="checkbox" className="w-4 h-4" />
+                      </td>
+                      <td className="px-3 py-3 text-blue-600 hover:underline cursor-pointer">
+                        <Link href={`/admin/policy/edit/${policy._id}`}>
+                          {policy.name}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        {policy.permissions && policy.permissions.length > 0 ? (
+                          <div className="flex flex-wrap justify-center gap-1">
+                            {policy.permissions.map(
+                              (perm: any, index: number) => (
+                                <span
+                                  key={perm._id || index}
+                                  className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded"
+                                >
+                                  {perm.name}
+                                </span>
+                              )
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-sm">
+                            Không có
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-3">{policy.description}</td>
+                      <td className="px-3 py-3 text-center">
+                        <button
+                          // onClick={() => handleDeletePolicies(policy.id)}
+                          className="text-red-600 hover:underline text-center font-semibold"
+                        >
+                          <DeletePermission className="inline-block w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="text-center text-gray-500 py-4">
+                      Không có dữ liệu.
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>

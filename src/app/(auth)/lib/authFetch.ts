@@ -1,4 +1,3 @@
-import { refreshToken } from '../_services/auth';
 import { getSession } from './session';
 
 export interface AuthFetchOptions extends RequestInit {
@@ -16,13 +15,7 @@ export const authFetch = async (
   let res = await fetch(url, options);
   // console.log('authFetch', res.status);
   if (res.status === 401) {
-    if (!session?.refreshToken) throw new Error('Refresh token not found');
-    const newAccessToken = await refreshToken(session.refreshToken);
-    // console.log('newAccessToken', newAccessToken);
-    if (newAccessToken) {
-      options.headers.Authorization = `Bearer ${newAccessToken}`;
-      res = await fetch(url, options);
-    }
+    throw new Error('Access token is invalid or expired');
   }
   return res;
 };

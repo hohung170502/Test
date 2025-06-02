@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   BadgeCheck,
@@ -26,22 +26,29 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
+import { logout } from "@/app/(auth)/_services/auth";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useUserStore } from "@/stores/userStore";
 
+export function NavUser() {
+  const user = useUserStore((state) => state.user);
+  const clearUser = useUserStore((state) => state.clearUser);
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    username: string;
-    email: string;
-    avatar: string;
-
-    roles?: string[];
-    verified?: boolean;
-  };
-}) {
   const { isMobile } = useSidebar();
+  const router = useRouter(); // Initialize router
 
+  const handleLogout = async () => {
+    const result = await logout();
+    if (result.success) {
+      clearUser(); // reset store
+      toast.success("Đăng xuất thành công");
+      router.push("/login"); // Điều hướng đến trang login sau khi logout thành công
+    } else {
+      console.error(result.message);
+    }
+  };
+  if (!user) return null; // hoặc Skeleton
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -103,7 +110,7 @@ export function NavUser({
                 }}
               >
                 <BadgeCheck />
-                Account
+                Tài khoản
               </DropdownMenuItem>
 
               <DropdownMenuItem>
@@ -116,12 +123,10 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <Link href={"/api/auth/signout"}>
-              <DropdownMenuItem className="cursor-pointer">
-                <LogOut />
-                Log out
-              </DropdownMenuItem>
-            </Link>
+            <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
+              <LogOut />
+              Log out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

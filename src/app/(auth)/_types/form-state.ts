@@ -4,12 +4,21 @@ export type FormState =
       error?: {
         email?: string[];
         password?: string[];
+        username?: string[];
+        phonenumber?: string[];
+        address?: string[];
+        gender?: string[];
+        birthday?: string[];
       };
+      username?: string;
+      phonenumber?: string;
+      address?: string;
+      gender?: string;
+      birthday?: string;
       code?: string;
       success?: boolean;
       message?: string;
-      redirectTo?: string
-
+      redirectTo?: string;
     }
   | undefined;
 

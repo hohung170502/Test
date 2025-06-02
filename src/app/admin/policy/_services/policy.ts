@@ -67,21 +67,15 @@ export async function createPolicy(
 }
 
 export async function getPolicies({
-  pageIndex = 1,
-  pageSize = 10,
-  keyword = "",
-  orderBy = "",
-  isDescending = false,
-  isOutputTotal = true,
-  isDeep = true,
+  limit = 10,
+  page = 1,
+  sort = true,
+  sortField = "",
 }: {
-  pageIndex?: number;
-  pageSize?: number;
-  keyword?: string;
-  orderBy?: string;
-  isDescending?: boolean;
-  isOutputTotal?: boolean;
-  isDeep?: boolean;
+  limit?: number;
+  page?: number;
+  sort?: boolean;
+  sortField?: string;
 }) {
   const session = await getSession();
 
@@ -90,17 +84,14 @@ export async function getPolicies({
   }
 
   const query = new URLSearchParams({
-    PageIndex: pageIndex.toString(),
-    PageSize: pageSize.toString(),
-    Keyword: keyword,
-    OrderBy: orderBy,
-    IsDescending: isDescending.toString(),
-    IsOutputTotal: "true",
-    IsDeep: "true", // ✅ Bổ sung dòng này để lấy luôn danh sách quyền
+    limit: limit.toString(),
+    page: page.toString(),
+    sort: sort.toString(),
+    sortField: sortField,
   });
 
   try {
-    const response = await fetch(`${BE_URL}/api/Account/Policies?${query}`, {
+    const response = await fetch(`${BE_URL}/api/GetPolicies?${query}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${session.accessToken}`,
@@ -116,11 +107,11 @@ export async function getPolicies({
 
     return {
       success: true,
-      data: result.data,
-      totalRecords: result.totalRecords,
+      policies: result.policies, // Sử dụng đúng trường policies từ API
+      totalDocuments: result.totalDocuments, // Sử dụng đúng trường totalDocuments từ API
     };
   } catch (error: any) {
-    console.error("❌ Lỗi khi gọi API getPoilicies:", error);
+    console.error("❌ Lỗi khi gọi API getPolicies:", error);
     return { success: false, message: error?.message || "Lỗi không xác định" };
   }
 }

@@ -12,7 +12,6 @@ export type Session = {
     verified: boolean;
   };
   accessToken: string;
-  refreshToken: string;
 };
 
 const secret_key = process.env.SESSION_SECRET_KEY!;
@@ -54,10 +53,7 @@ export async function deleteSession() {
   (await cookies()).delete('session');
 }
 
-export async function updateToken({}: {
-  accessToken: string;
-  refreshToken: string;
-}) {
+export async function updateToken(accessToken: string) {
   const cookie = (await cookies()).get('session')?.value;
   if (!cookie) return null;
   const { payload } = await jwtVerify<Session>(cookie, endcodeKey);
@@ -66,8 +62,7 @@ export async function updateToken({}: {
     user: {
       ...payload.user,
     },
-    accessToken: payload.accessToken,
-    refreshToken: "",
+    accessToken,
   };
   await createSession(newPayload);
 }

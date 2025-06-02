@@ -172,7 +172,7 @@ export async function PermissionUpdate(
 
   try {
     const response = await fetch(`${BE_URL}/api/UpdatePermission/${id}`, {
-      method: "PATCH",
+      method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.accessToken}`,

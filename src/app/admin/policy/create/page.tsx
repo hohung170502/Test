@@ -11,37 +11,56 @@ import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { createPolicy } from "../_services/policy";
 import { Textarea } from "@/components/ui/textarea";
+import { getPermissions } from "../../permission/_services/permission";
 
 export default function CreatePolicyPage() {
   const [state, action] = useActionState(createPolicy, undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [permissions, setPermissions] = useState<any[]>([]);
-
+  const [pageIndex, setPageIndex] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
+  const [sortOrder, setSortOrder] = useState(true);
+  const [sortField, setSortField] = useState("");
   const router = useRouter();
 
-  //   useEffect(() => {
-  //     const fetchPermissions = async () => {
-  //       try {
-  //         const res = await getPermissions({ pageIndex: 1, pageSize: 100 });
-  //         if (res.success && Array.isArray(res.data)) {
-  //           setPermissions(res.data);
-  //         }
-  //       } catch (error) {
-  //         toast.error("Không thể tải danh sách quyền.");
-  //         console.error(error);
-  //       }
-  //     };
-  //     fetchPermissions();
-  //   }, []);
-  //   useEffect(() => {
-  //     if (state?.success) {
-  //       toast.success(state.message || "Tạo chính sách thành công");
-  //       router.push("/admin/policies"); // hoặc redirect về danh sách
-  //     } else if (state?.message && !state.success) {
-  //       toast.error(state.message);
-  //     }
-  //   }, [state, router]);
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      setLoading(true);
+      try {
+        const response = await getPermissions({
+          limit: pageSize,
+          page: pageIndex,
+          sort: sortOrder,
+          sortField,
+        });
+
+        if (response.success) {
+          setPermissions(response.data || []);
+          setTotalPages(response.totalPages || 0);
+        } else {
+          toast.error("Lỗi khi tải danh sách quyền: " + response.message);
+        }
+      } catch (error) {
+        console.error("❌ Lỗi khi gọi API getPermissions:", error);
+        toast.error("❌ Có lỗi xảy ra khi tải danh sách quyền.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPermissions();
+  }, [pageIndex, pageSize, sortOrder, sortField]);
+  useEffect(() => {
+    if (state?.success) {
+      toast.success(state.message || "Tạo chính sách thành công");
+      router.push("/admin/policies"); // hoặc redirect về danh sách
+    } else if (state?.message && !state.success) {
+      toast.error(state.message);
+    }
+  }, [state, router]);
   return (
     <div className="px-4 ">
       <div className="pb-5 flex items-center min-h-[40px] space-x-4">
@@ -75,7 +94,9 @@ export default function CreatePolicyPage() {
       >
         <div className="md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="name">Tên chính sách <span className="text-red-500">*</span></Label>
+            <Label htmlFor="name">
+              Tên chính sách <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="name"
               name="name"
@@ -114,9 +135,9 @@ export default function CreatePolicyPage() {
           {/* Chọn quyền */}
           <div className="border-b my-1" /> {/* Đường phân cách */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-2 max-h-64 overflow-y-auto  p-3 rounded-md">
-            {permissions.map((perm) => (
-              <label key={perm.id} className="flex items-center gap-2">
-                <input type="checkbox" name="permissionIds" value={perm.id} />
+            {permissions.map((perm, index) => (
+              <label key={perm._id || index} className="flex items-center gap-2">
+                <input type="checkbox" name="permissionIds" value={perm._id} />
                 <span>{perm.name}</span>
               </label>
             ))}
