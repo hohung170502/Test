@@ -11,6 +11,7 @@ import { redirect } from "next/navigation";
 export async function getProfile(): Promise<FormState> {
   // Lấy session và access token
   const session = await getSession();
+  // console.log("Session:", session);
 
   if (!session || !session.user || !session.accessToken) {
     return { success: false, message: "Người dùng chưa đăng nhập" };
@@ -25,23 +26,27 @@ export async function getProfile(): Promise<FormState> {
     },
   });
 
+  // console.log("Response status:", res.status);
+
   if (res.ok) {
     const profileData = await res.json();
+    // console.log("Raw profile data from API:", profileData);
     return {
       success: true,
       message: "",
       data: {
-        email: profileData.email,
-        avatar: profileData.avatar,
-        username: profileData.username,
-        phonenumber: profileData.phonenumber,
-        address: profileData.address,
-        gender: profileData.gender,
-        birthday: profileData.birthday,
+        email: profileData.data?.email ,
+        avatar: profileData.data?.avatar ,
+        username: profileData.data?.username ,
+        phonenumber: profileData.data?.phonenumber ,
+        address: profileData.data?.address ,
+        gender: profileData.data?.gender ,
+        birthday: profileData.data?.birthday ,
       },
     };
   } else {
     const errorData = await res.json();
+    console.error("Error fetching profile:", errorData);
     return {
       success: false,
       error: errorData,

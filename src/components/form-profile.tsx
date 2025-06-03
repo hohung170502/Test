@@ -63,7 +63,7 @@ export function FormDemo() {
       if (result?.success) {
         setProfileData(result.data);
         setUser(result.data); // cập nhật store
-        setGender(result.data.gender || "");
+        setGender(result.data.gender );
       } else {
         toast.error("Không thể tải thông tin người dùng.");
         console.error("❌ Lỗi tải thông tin người dùng:", result?.message);
@@ -113,7 +113,7 @@ export function FormDemo() {
     e.preventDefault();
 
     if (!profileChanged && !passwordChanged) {
-      toast("Bạn chưa thay đổi gì cả!");
+      toast.info("Bạn chưa thay đổi gì cả!");
       return;
     }
 
@@ -304,14 +304,36 @@ export function FormDemo() {
               >
                 Ngày sinh
               </Label>
-              <Input
-                id="birthday"
-                name="birthday"
-                type="date"
-                defaultValue={profileData?.birthday || ""}
-                className="hover:border-blue-500 focus:border-blue-500"
-                placeholder="Chọn ngày sinh"
-              />
+
+              <div className="relative">
+                <Input
+                  id="birthday"
+                  name="birthday"
+                  type="date"
+                  defaultValue={profileData?.birthday || ""}
+                  className="hover:border-blue-500 focus:border-blue-500 pr-10" // thêm padding phải để không che icon
+                  placeholder="Chọn ngày sinh"
+                />
+
+                {/* Icon nằm bên phải */}
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                  {/* Ví dụ dùng icon calendar từ Heroicons */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7V3m8 4V3m-9 8h10m-9 4h9m-9 4h9M3 8h18v12a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"
+                    />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
           <div>

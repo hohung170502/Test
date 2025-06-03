@@ -80,20 +80,29 @@ export async function signin(
     body: JSON.stringify(validationFields.data),
   });
 
+  // console.log("Response status:", res.status);
+
   if (res.ok) {
     const result = await res.json();
-    await createSession({
+    // console.log("API result:", result);
+
+    const payload = {
       user: {
-        email: result.email,
-        username: result.username,
-        avatar: result.avatar,
-        roles: result.roles,
-        verified: result.verified,
+        email: result.data.email,
+        username: result.data.username,
+        avatar: result.data.avatar,
+        roles: result.data.roles,
+        verified: result.data.verified,
       },
-      accessToken: result.accessToken,
-    });
+      accessToken: result.data.accessToken,
+    };
+
+    await createSession(payload);
+    // console.log("Session payload:", payload);
+
     return { success: true, message: "Đăng nhập thành công." };
   } else {
+    console.log("Error response:", await res.text());
     return {
       success: false,
       error: {

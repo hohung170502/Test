@@ -13,14 +13,14 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { getSession } from "../../(auth)/lib/session";
 import { redirect } from "next/navigation";
 import { Metadata } from "next";
+import { getSession } from "@/app/(auth)/lib/session";
 
 export const metadata: Metadata = {
-  title: "Dashboard",
+  title: "Danh mục",
 };
-export default async function ProfileLayout({
+export default async function CategoryLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -29,31 +29,29 @@ export default async function ProfileLayout({
   if (!session || !session.user) {
     redirect("/login");
   }
-  // const profile = await getProfile();
-  // const json = JSON.stringify(profile);
+
   return (
     <SidebarProvider>
       <AppSidebar session={session} />
-      <SidebarInset className="bg-[#f5f5f5]">
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 bg-white">
-          <div className="flex items-center gap-2 px-4 ">
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+          <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Building Your Application
-                  </BreadcrumbLink>
+                  <BreadcrumbLink href="#">Trang chủ</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
+                  <BreadcrumbPage>Danh mục</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
+        {/* Render nội dung của trang con */}
         {children}
       </SidebarInset>
     </SidebarProvider>

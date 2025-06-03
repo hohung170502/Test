@@ -17,6 +17,7 @@ export type Session = {
 const secret_key = process.env.SESSION_SECRET_KEY!;
 const endcodeKey = new TextEncoder().encode(secret_key);
 export async function createSession(payload: Session) {
+  // console.log('createSession payload:', payload);
   const expiredAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const session = await new SignJWT(payload)
     .setProtectedHeader({
@@ -25,6 +26,8 @@ export async function createSession(payload: Session) {
     .setIssuedAt()
     .setExpirationTime('7d')
     .sign(endcodeKey);
+  // console.log('Generated session token:', session);
+
   const cookie = await cookies();
   cookie.set('session', session, {
     httpOnly: true,
@@ -33,6 +36,7 @@ export async function createSession(payload: Session) {
     sameSite: 'lax',
     path: '/',
   });
+  // console.log('Session cookie set successfully');
 }
 
 export async function getSession() {

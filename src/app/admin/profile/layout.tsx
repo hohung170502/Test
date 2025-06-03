@@ -18,8 +18,9 @@ import { redirect } from "next/navigation";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Dashboard",
+  title: "Hồ sơ người dùng",
 };
+
 export default async function ProfileLayout({
   children,
 }: {
@@ -29,32 +30,26 @@ export default async function ProfileLayout({
   if (!session || !session.user) {
     redirect("/login");
   }
-  // const profile = await getProfile();
-  // const json = JSON.stringify(profile);
+
   return (
     <SidebarProvider>
       <AppSidebar session={session} />
       <SidebarInset className="bg-[#f5f5f5]">
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 bg-white">
-          <div className="flex items-center gap-2 px-4 ">
+        <header className="flex h-16 shrink-0 items-center gap-2 bg-white">
+          <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Building Your Application
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
+                  <BreadcrumbPage>Tài khoản</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
-        {children}
+
+        <main className="">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );

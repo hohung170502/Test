@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 interface User {
-  username: string;
+ username: string;
   email: string;
   avatar: string;
   roles?: string[];
@@ -10,6 +10,9 @@ interface User {
   address?: string;
   gender?: string;
   birthday?: string;
+  createdAt?: string; 
+  updatedAt?: string; 
+  isOnline?: boolean; 
 }
 
 interface UserStore {
